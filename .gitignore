@@ -15,12 +15,14 @@ build/
 .env.*
 !.env.example
 
-# Node / dashboard (later phases)
+# Node / dashboard
 node_modules/
 .next/
 out/
 playwright-report/
 test-results/
+next-env.d.ts
+*.tsbuildinfo
 
 # OS / editor
 .DS_Store

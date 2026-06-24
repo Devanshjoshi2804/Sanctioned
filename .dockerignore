@@ -1,0 +1,14 @@
+# Keep the API image build context small and deterministic.
+.git
+.venv
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/.hypothesis
+apps
+node_modules
+**/node_modules
+**/.next
+docs
+*.md
