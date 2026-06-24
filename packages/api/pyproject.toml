@@ -11,6 +11,7 @@ requires-python = ">=3.12"
 dependencies = [
     "sanctioned",
     "sanctioned-ingest",
+    "sanctioned-copilot",
     "fastapi>=0.110",
     "uvicorn[standard]>=0.29",
 ]

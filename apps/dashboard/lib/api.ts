@@ -45,3 +45,14 @@ export interface IngestResult {
 export function postIngestSandbox(): Promise<IngestResult> {
   return request<IngestResult>("/ingest/sandbox", { method: "POST", body: "{}" });
 }
+
+export interface AskResult {
+  question: string;
+  answer: string;
+  backend: string;
+  citations: { citation: string; source: string; section: string; score: number }[];
+}
+
+export function postAsk(question: string): Promise<AskResult> {
+  return request<AskResult>("/ask", { method: "POST", body: JSON.stringify({ question }) });
+}

@@ -19,6 +19,7 @@ export const metadata: Metadata = {
 const NAV = [
   { href: "/", label: "Match" },
   { href: "/policy-diff", label: "Policy diff" },
+  { href: "/ask", label: "Ask" },
 ];
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

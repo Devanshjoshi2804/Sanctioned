@@ -126,6 +126,20 @@ class TestIngestSandbox:
         assert body["derived"]["salary_regularity"] == "IRREGULAR"
 
 
+class TestAsk:
+    def test_answers_with_citations(self) -> None:
+        body = client.post(
+            "/ask",
+            json={"question": "Which lenders accept self-employed with two years of ITR?"},
+        ).json()
+        assert body["answer"]
+        assert len(body["citations"]) >= 1
+        assert body["backend"] in {"offline", "gemini"}
+
+    def test_empty_question_is_rejected(self) -> None:
+        assert client.post("/ask", json={"question": ""}).status_code == 422
+
+
 @pytest.mark.parametrize("path", ["/health", "/openapi.json"])
 def test_service_endpoints(path: str) -> None:
     assert client.get(path).status_code == 200

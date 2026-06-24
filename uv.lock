@@ -1081,6 +1081,7 @@ source = { editable = "packages/api" }
 dependencies = [
     { name = "fastapi" },
     { name = "sanctioned" },
+    { name = "sanctioned-copilot" },
     { name = "sanctioned-ingest" },
     { name = "uvicorn", extra = ["standard"] },
 ]
@@ -1089,6 +1090,7 @@ dependencies = [
 requires-dist = [
     { name = "fastapi", specifier = ">=0.110" },
     { name = "sanctioned", editable = "packages/engine" },
+    { name = "sanctioned-copilot", editable = "packages/copilot" },
     { name = "sanctioned-ingest", editable = "packages/ingest" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.29" },
 ]

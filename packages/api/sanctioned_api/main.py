@@ -19,6 +19,7 @@ from typing import Any
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from sanctioned_copilot.copilot import Copilot
 from sanctioned_ingest.autofill import profile_autofill
 from sanctioned_ingest.derive import derive_financials
 from sanctioned_ingest.source import MockStatementSource
@@ -55,6 +56,17 @@ app.add_middleware(
 )
 
 _REGISTRY = load_bundled_registry()
+
+# The copilot is built lazily on first /ask so it doesn't slow startup (and so the
+# Gemini backend only embeds the corpus when actually used).
+_copilot: Copilot | None = None
+
+
+def _get_copilot() -> Copilot:
+    global _copilot
+    if _copilot is None:
+        _copilot = Copilot.build()
+    return _copilot
 
 
 def _registry_from_dicts(policies: list[dict[str, Any]]) -> Registry:
@@ -161,6 +173,28 @@ def post_ingest_sandbox(body: IngestRequest) -> dict[str, Any]:
                 "category": txn.category.value,
             }
             for txn in statement.transactions[:6]
+        ],
+    }
+
+
+class AskRequest(BaseModel):
+    """An ops question for the copilot."""
+
+    question: str = Field(min_length=1)
+    k: int = Field(default=4, ge=1, le=8)
+
+
+@app.post("/ask")
+def post_ask(body: AskRequest) -> dict[str, Any]:
+    """Answer an ops question from retrieved policy/runbook sources, with citations."""
+    answer = _get_copilot().ask(body.question, k=body.k)
+    return {
+        "question": answer.question,
+        "answer": answer.answer,
+        "backend": answer.backend,
+        "citations": [
+            {"citation": c.citation, "source": c.source, "section": c.section, "score": c.score}
+            for c in answer.citations
         ],
     }
 
