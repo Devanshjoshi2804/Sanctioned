@@ -11,13 +11,14 @@ name = "sanctioned-workspace"
 version = "0.0.0"
 description = "Lender-policy eligibility & matching engine — workspace root."
 requires-python = ">=3.12"
-dependencies = ["sanctioned"]
+dependencies = ["sanctioned", "sanctioned-api"]
 
 [tool.uv.workspace]
 members = ["packages/*"]
 
 [tool.uv.sources]
 sanctioned = { workspace = true }
+sanctioned-api = { workspace = true }
 
 [tool.uv]
 package = false
@@ -26,6 +27,7 @@ package = false
 dev = [
     "pytest>=8.2",
     "hypothesis>=6.100",
+    "httpx>=0.27",
     "ruff>=0.5",
     "black>=24.4",
     "mypy>=1.10",
@@ -48,7 +50,7 @@ target-version = "py312"
 select = ["E", "F", "I", "B", "C4", "UP", "SIM", "RUF"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["sanctioned"]
+known-first-party = ["sanctioned", "sanctioned_api"]
 
 # --- Type checking ------------------------------------------------------------
 
@@ -57,6 +59,7 @@ python_version = "3.12"
 strict = true
 plugins = ["pydantic.mypy"]
 files = ["packages", "scripts"]
+mypy_path = "packages/api"
 
 [tool.pydantic-mypy]
 init_forbid_extra = true
@@ -71,6 +74,10 @@ ignore_missing_imports = true
 # --- Tests --------------------------------------------------------------------
 
 [tool.pytest.ini_options]
-testpaths = ["packages/engine/tests"]
+testpaths = ["packages/engine/tests", "packages/api/tests"]
 pythonpath = ["packages/engine"]
 addopts = "-ra"
+filterwarnings = [
+    # Starlette's TestClient deprecation about httpx is third-party noise.
+    "ignore:Using `httpx` with `starlette.testclient`",
+]

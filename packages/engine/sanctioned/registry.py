@@ -77,6 +77,16 @@ class Registry:
         return lender_id in self._policies
 
 
+def bundled_policies_dir() -> Path:
+    """Path to the lender policies shipped with the engine package."""
+    return Path(__file__).resolve().parent.parent / "policies"
+
+
+def load_bundled_registry(*, validate: bool = True) -> Registry:
+    """Load the registry from the engine's bundled policy directory."""
+    return load_registry(bundled_policies_dir(), validate=validate)
+
+
 def load_registry(directory: Path, *, validate: bool = True) -> Registry:
     """Load every policy file under ``directory`` into a :class:`Registry`.
 
