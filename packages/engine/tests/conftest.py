@@ -8,15 +8,31 @@ from typing import Any
 
 import pytest
 
-from sanctioned.registry import load_policy_data
+from sanctioned.registry import Registry, load_policy_data, load_registry
 
 POLICIES_DIR = Path(__file__).resolve().parent.parent / "policies"
+
+
+def pytest_addoption(parser: pytest.Parser) -> None:
+    """Register --update-golden to rewrite golden snapshots instead of asserting."""
+    parser.addoption(
+        "--update-golden",
+        action="store_true",
+        default=False,
+        help="Rewrite golden snapshot files from current engine output.",
+    )
 
 
 @pytest.fixture
 def policies_dir() -> Path:
     """Absolute path to the bundled lender-policy YAML directory."""
     return POLICIES_DIR
+
+
+@pytest.fixture
+def registry() -> Registry:
+    """The full validated lender registry loaded from bundled policies."""
+    return load_registry(POLICIES_DIR)
 
 
 @pytest.fixture

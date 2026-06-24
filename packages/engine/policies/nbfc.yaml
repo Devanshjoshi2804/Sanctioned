@@ -1,0 +1,76 @@
+# Non-Banking Financial Company (NBFC) archetype.
+#
+# INDICATIVE, PUBLIC-SOURCED APPROXIMATION — not any lender's live or internal
+# policy. Modelled on publicly published NBFC characteristics: widest credit box
+# (accepts CIBIL 650-699 on REFER and thin files) at the highest rates and the
+# tightest LTV.
+
+lender_id: nbfc
+lender_name: NBFC (indicative archetype)
+lender_type: NBFC
+policy_version: 1.0.0
+effective_date: 2026-01-01
+source: >-
+  Indicative archetype modelled on publicly published NBFC home-loan terms (wider
+  credit acceptance including thin files, higher rates, tighter LTV). Not sourced
+  from any lender's live or internal systems.
+disclaimer: >-
+  Indicative, public-sourced approximation for demonstration only. Not any
+  lender's live, internal, or guaranteed policy.
+
+products: [NEW_HOME_LOAN, BALANCE_TRANSFER, TOP_UP]
+
+age:
+  salaried: { min_entry: 21, max_at_maturity: 65 }
+  self_employed: { min_entry: 21, max_at_maturity: 70 }
+
+tenure: { max_years: 25 }
+
+foir:
+  salaried:
+    - { up_to_nmi: 60000, cap_pct: 50 }
+    - { up_to_nmi: null, cap_pct: 55 }
+  self_employed:
+    - { up_to_nmi: 60000, cap_pct: 55 }
+    - { up_to_nmi: null, cap_pct: 60 }
+
+nmi_multiplier: { min: 50, max: 65 }
+
+ltv_bands:
+  - { up_to_amount: 3000000, max_ltv_pct: 85 }
+  - { up_to_amount: 7500000, max_ltv_pct: 75 }
+  - { up_to_amount: null, max_ltv_pct: 70 }
+
+min_income:
+  salaried: { metro: 18000, non_metro: 12000 }
+  self_employed: { metro: 18000, non_metro: 12000 }
+
+cibil_tiers:
+  - { min_score: 800, max_score: 900, decision: APPROVE, rate_pct: 9.25 }
+  - { min_score: 750, max_score: 799, decision: APPROVE, rate_pct: 9.60 }
+  - { min_score: 700, max_score: 749, decision: APPROVE, rate_pct: 10.10 }
+  - { min_score: 650, max_score: 699, decision: REFER, rate_pct: 10.90 }
+  - { min_score: 300, max_score: 649, decision: REJECT, rate_pct: null }
+  - { min_score: -1, max_score: -1, decision: REFER, rate_pct: 11.50 }
+
+self_employed:
+  min_business_vintage_years: 2
+  itr_years_required: 1
+
+property_rules:
+  - { type: UNDER_CONSTRUCTION, allowed: true, ltv_override_pct: 75 }
+  - { type: SELF_CONSTRUCTION, allowed: true, ltv_override_pct: 70 }
+  - { type: PLOT_PLUS_CONSTRUCTION, allowed: true, ltv_override_pct: 65 }
+
+variable_pay_haircut_pct: 50
+
+employer_category_perks:
+  - { category: SUPER_CAT, foir_bonus_pct: 2, rate_discount_bps: 5 }
+
+co_applicant: { allowed: true, combine_income: true, max_count: 2 }
+
+product_overrides:
+  BALANCE_TRANSFER: { max_ltv_pct: 75, min_seasoning_months: 6 }
+  TOP_UP: { combined_max_ltv_pct: 65 }
+
+limits: { min_loan: 200000, max_loan: 50000000 }

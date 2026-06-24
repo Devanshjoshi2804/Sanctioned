@@ -67,4 +67,5 @@ warn_required_dynamic_aliases = true
 
 [tool.pytest.ini_options]
 testpaths = ["packages/engine/tests"]
+pythonpath = ["packages/engine"]
 addopts = "-ra"

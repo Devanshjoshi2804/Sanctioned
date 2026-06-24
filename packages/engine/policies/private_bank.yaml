@@ -1,0 +1,77 @@
+# Private bank archetype.
+#
+# INDICATIVE, PUBLIC-SOURCED APPROXIMATION — not any lender's live or internal
+# policy. Modelled on publicly published private-bank home-loan characteristics:
+# faster underwriting for salaried premier employers, richer rate discounts for
+# top employer categories, and a higher CIBIL floor than PSUs.
+
+lender_id: private_bank
+lender_name: Private Bank (indicative archetype)
+lender_type: PRIVATE_BANK
+policy_version: 1.0.0
+effective_date: 2026-01-01
+source: >-
+  Indicative archetype modelled on publicly published private-sector bank
+  home-loan terms (employer-category pricing, CIBIL-linked card rates, RBI-aligned
+  LTV). Not sourced from any lender's live or internal systems.
+disclaimer: >-
+  Indicative, public-sourced approximation for demonstration only. Not any
+  lender's live, internal, or guaranteed policy.
+
+products: [NEW_HOME_LOAN, BALANCE_TRANSFER, TOP_UP]
+
+age:
+  salaried: { min_entry: 23, max_at_maturity: 65 }
+  self_employed: { min_entry: 25, max_at_maturity: 70 }
+
+tenure: { max_years: 30 }
+
+foir:
+  salaried:
+    - { up_to_nmi: 75000, cap_pct: 50 }
+    - { up_to_nmi: null, cap_pct: 55 }
+  self_employed:
+    - { up_to_nmi: 75000, cap_pct: 50 }
+    - { up_to_nmi: null, cap_pct: 55 }
+
+nmi_multiplier: { min: 55, max: 72 }
+
+ltv_bands:
+  - { up_to_amount: 3000000, max_ltv_pct: 90 }
+  - { up_to_amount: 7500000, max_ltv_pct: 80 }
+  - { up_to_amount: null, max_ltv_pct: 75 }
+
+min_income:
+  salaried: { metro: 35000, non_metro: 25000 }
+  self_employed: { metro: 40000, non_metro: 30000 }
+
+cibil_tiers:
+  - { min_score: 800, max_score: 900, decision: APPROVE, rate_pct: 8.35 }
+  - { min_score: 750, max_score: 799, decision: APPROVE, rate_pct: 8.55 }
+  - { min_score: 720, max_score: 749, decision: APPROVE, rate_pct: 8.85 }
+  - { min_score: 700, max_score: 719, decision: REFER, rate_pct: 9.40 }
+  - { min_score: 300, max_score: 699, decision: REJECT, rate_pct: null }
+  - { min_score: -1, max_score: -1, decision: REJECT, rate_pct: null }
+
+self_employed:
+  min_business_vintage_years: 3
+  itr_years_required: 2
+
+property_rules:
+  - { type: UNDER_CONSTRUCTION, allowed: true, ltv_override_pct: 80 }
+  - { type: PLOT_PLUS_CONSTRUCTION, allowed: true, ltv_override_pct: 70 }
+
+variable_pay_haircut_pct: 50
+
+employer_category_perks:
+  - { category: SUPER_CAT, foir_bonus_pct: 5, rate_discount_bps: 15 }
+  - { category: CAT_A, foir_bonus_pct: 3, rate_discount_bps: 10 }
+  - { category: CAT_B, foir_bonus_pct: 1, rate_discount_bps: 5 }
+
+co_applicant: { allowed: true, combine_income: true, max_count: 2 }
+
+product_overrides:
+  BALANCE_TRANSFER: { max_ltv_pct: 80, min_seasoning_months: 6 }
+  TOP_UP: { combined_max_ltv_pct: 75 }
+
+limits: { min_loan: 1000000, max_loan: 150000000 }

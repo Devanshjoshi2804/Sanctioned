@@ -37,4 +37,56 @@ marked as such.
 
 ---
 
-> Additional lenders (`private_bank`, `hfc`, `nbfc`) are added in Phase 1.
+## `private_bank.yaml` — Private bank archetype
+
+Indicative profile modelled on publicly published private-bank home-loan terms: tighter CIBIL
+floor (720 for full approval, 700–719 on refer), employer-category-driven pricing with the
+richest discounts of the panel, and higher minimum incomes. Figures are illustrative archetype
+estimates, not any lender's published schedule.
+
+| Policy area | Value(s) | Source / basis |
+|---|---|---|
+| Entry / maturity age | Salaried 23–65, self-employed 25–70 | Typical private-bank eligibility windows. |
+| FOIR | 50% (≤₹75k), 55% (>₹75k) | Archetype; private banks publicly indicate tighter FOIR than HFCs. |
+| NMI multiplier | 55×–72× | Archetype estimate. |
+| LTV slabs | 90 / 80 / 75 by RBI amount band | RBI LTV ceilings. |
+| CIBIL bands & rates | 800+: 8.35%, 750–799: 8.55%, 720–749: 8.85%, 700–719: refer @ 9.40%, <700 & thin-file: reject | Illustrative CIBIL-linked card rates; private banks typically decline thin files. |
+| Employer perks | SUPER_CAT +5%/−15bps, CAT_A +3%/−10bps, CAT_B +1%/−5bps | Illustrative premier-employer concessions. |
+| Loan limits | ₹10,00,000 – ₹15,00,00,000 | Archetype ticket-size range. |
+
+---
+
+## `hfc.yaml` — Housing Finance Company archetype
+
+Indicative profile modelled on publicly published HFC characteristics: self-employed-friendly
+underwriting (2-year vintage, higher SE FOIR, 60% variable-pay counted, thin-file refer) at
+higher rates than banks.
+
+| Policy area | Value(s) | Source / basis |
+|---|---|---|
+| Entry / maturity age | Salaried 21–65, self-employed 21–70 | Typical HFC eligibility windows. |
+| FOIR | Salaried 50/55%, self-employed 55/60% | Archetype; HFCs publicly position as more SE-accommodating. |
+| Self-employed gates | 2-year vintage, 2 ITR years | Friendlier than bank norms. |
+| Variable-pay haircut | 60% counted | More generous than the 50% bank archetype. |
+| CIBIL bands & rates | 800+: 8.75%, 750–799: 9.10%, 700–749: 9.50%, 650–699: refer @ 10.25%, thin-file: refer @ 10.75% | Illustrative; higher than bank rates. |
+| Loan limits | ₹3,00,000 – ₹7,50,00,000 | Archetype ticket-size range. |
+
+---
+
+## `nbfc.yaml` — NBFC archetype
+
+Indicative profile modelled on publicly published NBFC characteristics: the widest credit box
+(CIBIL 650–699 and thin files accepted on refer) at the highest rates and tightest LTV.
+
+| Policy area | Value(s) | Source / basis |
+|---|---|---|
+| Tenure | Max 25 years | Tighter than the 30-year bank/HFC archetype. |
+| LTV slabs | 85 / 75 / 70 by amount band | Conservative relative to RBI ceilings, reflecting NBFC risk appetite. |
+| Self-employed gates | 2-year vintage, 1 ITR year | Most lenient of the panel. |
+| CIBIL bands & rates | 800+: 9.25%, 750–799: 9.60%, 700–749: 10.10%, 650–699: refer @ 10.90%, thin-file: refer @ 11.50% | Illustrative; highest rates of the panel, widest acceptance. |
+| Loan limits | ₹2,00,000 – ₹5,00,00,000 | Archetype ticket-size range. |
+
+---
+
+> All four archetypes deliberately span the lender landscape (PSU → private → HFC → NBFC) so the
+> matching engine and policy-diff tooling exercise a realistic spread of outcomes.
