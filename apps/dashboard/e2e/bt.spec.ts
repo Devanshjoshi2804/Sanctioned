@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 // Balance-transfer journey: switch product, supply the outstanding and existing
 // rate, and confirm the indicative monthly saving surfaces in the trace panel.
 test("balance transfer surfaces the monthly saving", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/match");
 
   await page.selectOption('select[name="product_type"]', "BALANCE_TRANSFER");
   await page.fill('input[name="existing_loan_outstanding"]', "4000000");

@@ -17,7 +17,8 @@ export const metadata: Metadata = {
 };
 
 const NAV = [
-  { href: "/", label: "Match" },
+  { href: "/", label: "Overview" },
+  { href: "/match", label: "Match" },
   { href: "/policy-diff", label: "Policy diff" },
   { href: "/ask", label: "Ask" },
 ];

@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 // Matching journey: a sub-prime borrower should produce a mix of verdicts, and the
 // grid must rank eligible lenders ahead of rejected ones.
 test("ranks eligible lenders first and shows rejections for weak credit", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/match");
 
   await page.fill('input[name="cibil"]', "690");
   await page.fill('input[name="net_monthly_income"]', "45000");

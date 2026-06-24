@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 // AA ingestion journey: autofill income from a sandbox statement, then run the
 // match on the autofilled borrower.
 test("autofills income from a sandbox statement and matches", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/match");
 
   // Change income to a sentinel so we can prove the autofill overwrote it.
   await page.fill('input[name="net_monthly_income"]', "1");

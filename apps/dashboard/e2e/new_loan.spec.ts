@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 // New home-loan journey: run the default borrower, see the ranked grid, and open
 // a lender's full reason trace.
 test("runs a new-loan match and shows reason traces", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/match");
   await page.getByTestId("run-match").click();
 
   const grid = page.getByTestId("match-grid");
@@ -23,7 +23,7 @@ test("runs a new-loan match and shows reason traces", async ({ page }) => {
 });
 
 test("links from a lender to its policy dossier", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/match");
   await page.getByTestId("run-match").click();
   const firstRow = page.getByTestId("lender-row").first();
   await firstRow.getByRole("button").click();
