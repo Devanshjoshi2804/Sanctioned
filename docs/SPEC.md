@@ -1,9 +1,7 @@
-# CLAUDE.md — `sanctioned`
+# Build Specification — `sanctioned`
 
 > Lender-Policy Eligibility & Matching Engine + QA harness for Indian home loans.
-> Build spec for Claude Code. Read this fully before writing code. Follow the **phase plan** (bottom) — each phase must be green and demoable before starting the next.
->
-> _If you want to keep the auto-loaded `CLAUDE.md` lean later, move §4–§9 into `docs/SPEC.md` and leave a one-line pointer here. For now this single file is the source of truth._
+> The authoritative build specification. Follow the **phase plan** (bottom) — each phase must be green and demoable before starting the next.
 
 ---
 
@@ -49,7 +47,7 @@ Conventions: `ruff` + `black` + `mypy --strict` for Python; `eslint` + `prettier
 
 ```
 sanctioned/
-├── CLAUDE.md                      # this file
+├── docs/SPEC.md                   # this file (build specification)
 ├── README.md                      # public-facing: what/why/live-demo/screenshots
 ├── docs/
 │   ├── domain.md                  # lending math reference (mirror of §5)

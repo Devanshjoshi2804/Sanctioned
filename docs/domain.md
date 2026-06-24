@@ -1,7 +1,7 @@
 # Lending domain reference
 
 Authoritative reference for the lending math implemented in `packages/engine`. This mirrors
-§5 of [`CLAUDE.md`](../CLAUDE.md); when the two disagree, `CLAUDE.md` wins until this file is
+§5 of [`SPEC.md`](SPEC.md); when the two disagree, `SPEC.md` wins until this file is
 reconciled. Filled in alongside the engine implementation (Phase 1).
 
 ## Glossary
