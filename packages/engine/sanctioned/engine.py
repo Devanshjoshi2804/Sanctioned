@@ -12,7 +12,9 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from decimal import Decimal
 
+from sanctioned.products.balance_transfer import evaluate_balance_transfer
 from sanctioned.products.new_loan import evaluate_new_loan
+from sanctioned.products.top_up import evaluate_top_up
 from sanctioned.registry import Registry
 from sanctioned.schemas.borrower import BorrowerProfile
 from sanctioned.schemas.enums import ProductType
@@ -28,7 +30,10 @@ def evaluate_lender(profile: BorrowerProfile, policy: LenderPolicy) -> Eligibili
     product = profile.loan_request.product_type
     if product is ProductType.NEW_HOME_LOAN:
         return evaluate_new_loan(profile, policy)
-    # Balance transfer and top-up arrive in Phase 3.
+    if product is ProductType.BALANCE_TRANSFER:
+        return evaluate_balance_transfer(profile, policy)
+    if product is ProductType.TOP_UP:
+        return evaluate_top_up(profile, policy)
     raise NotImplementedError(f"product {product.value} is not yet supported")
 
 
