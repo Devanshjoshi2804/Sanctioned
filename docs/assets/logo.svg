@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="84" height="84" viewBox="0 0 84 84" role="img" aria-label="sanctioned logo">
+  <rect width="84" height="84" rx="16" fill="#15171c"/>
+  <!-- decision spine: the reason-ledger motif -->
+  <rect x="20" y="24" width="5" height="36" rx="2.5" fill="#1f7a55"/>
+  <!-- ledger rows -->
+  <rect x="32" y="27" width="34" height="5" rx="2.5" fill="#ffffff"/>
+  <rect x="32" y="39.5" width="26" height="5" rx="2.5" fill="#aeb6c2"/>
+  <rect x="32" y="52" width="30" height="5" rx="2.5" fill="#2f4b7c"/>
+</svg>
