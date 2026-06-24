@@ -11,7 +11,7 @@ name = "sanctioned-workspace"
 version = "0.0.0"
 description = "Lender-policy eligibility & matching engine — workspace root."
 requires-python = ">=3.12"
-dependencies = ["sanctioned", "sanctioned-api"]
+dependencies = ["sanctioned", "sanctioned-api", "sanctioned-copilot"]
 
 [tool.uv.workspace]
 members = ["packages/*"]
@@ -19,6 +19,7 @@ members = ["packages/*"]
 [tool.uv.sources]
 sanctioned = { workspace = true }
 sanctioned-api = { workspace = true }
+sanctioned-copilot = { workspace = true }
 
 [tool.uv]
 package = false
@@ -59,7 +60,7 @@ python_version = "3.12"
 strict = true
 plugins = ["pydantic.mypy"]
 files = ["packages", "scripts"]
-mypy_path = "packages/api"
+mypy_path = ["packages/api", "packages/copilot"]
 
 [tool.pydantic-mypy]
 init_forbid_extra = true
@@ -71,10 +72,15 @@ warn_required_dynamic_aliases = true
 module = ["pandas", "pandas.*"]
 ignore_missing_imports = true
 
+# The Gemini SDK ships no stubs; it is only touched on the live copilot path.
+[[tool.mypy.overrides]]
+module = ["google.genai", "google.genai.*"]
+ignore_missing_imports = true
+
 # --- Tests --------------------------------------------------------------------
 
 [tool.pytest.ini_options]
-testpaths = ["packages/engine/tests", "packages/api/tests"]
+testpaths = ["packages/engine/tests", "packages/api/tests", "packages/copilot/tests"]
 pythonpath = ["packages/engine"]
 addopts = "-ra"
 filterwarnings = [
