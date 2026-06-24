@@ -1,0 +1,23 @@
+# The eligibility & matching engine — the single home of all business rules.
+#
+# This package is a pure, importable library: deterministic typed functions over
+# Pydantic models. It has no web/UI/I-O concerns beyond loading policy YAML.
+# Downstream layers (API, dashboard, copilot) depend on it; it depends on none
+# of them.
+
+[project]
+name = "sanctioned"
+version = "0.1.0"
+description = "Deterministic lender-policy eligibility & matching engine for Indian home loans."
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.7",
+    "pyyaml>=6.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["sanctioned"]

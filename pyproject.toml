@@ -1,0 +1,70 @@
+# uv workspace root for the `sanctioned` project.
+#
+# The root is intentionally not a distributable package — it exists to pin the
+# Python toolchain, gather the workspace members, and hold the shared tool
+# configuration (ruff / black / mypy / pytest) so every member is linted and
+# type-checked identically. Business code lives in the workspace members under
+# `packages/`.
+
+[project]
+name = "sanctioned-workspace"
+version = "0.0.0"
+description = "Lender-policy eligibility & matching engine — workspace root."
+requires-python = ">=3.12"
+dependencies = ["sanctioned"]
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv.sources]
+sanctioned = { workspace = true }
+
+[tool.uv]
+package = false
+
+[dependency-groups]
+dev = [
+    "pytest>=8.2",
+    "hypothesis>=6.100",
+    "ruff>=0.5",
+    "black>=24.4",
+    "mypy>=1.10",
+    "types-PyYAML>=6.0",
+]
+
+# --- Formatting & linting -----------------------------------------------------
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+# A pragmatic-but-strict set: pycodestyle/pyflakes, import order, bugbear,
+# comprehensions, pyupgrade, and a few correctness-oriented rules.
+select = ["E", "F", "I", "B", "C4", "UP", "SIM", "RUF"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["sanctioned"]
+
+# --- Type checking ------------------------------------------------------------
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+files = ["packages"]
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+
+# --- Tests --------------------------------------------------------------------
+
+[tool.pytest.ini_options]
+testpaths = ["packages/engine/tests"]
+addopts = "-ra"

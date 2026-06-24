@@ -1,0 +1,89 @@
+# Public-sector bank archetype.
+#
+# INDICATIVE, PUBLIC-SOURCED APPROXIMATION — not any lender's live or internal
+# policy. Modelled on publicly published PSU home-loan characteristics:
+# conservative LTV, low headline rates, CIBIL-led pricing with a 700 floor, and
+# FOIR graded by income slab. Every number's basis is recorded in
+# docs/data-sources.md.
+
+lender_id: psu_bank
+lender_name: PSU Bank (indicative archetype)
+lender_type: PUBLIC_BANK
+policy_version: 1.0.0
+effective_date: 2026-01-01
+source: >-
+  Indicative archetype modelled on publicly published public-sector bank
+  home-loan schedules (entry/maturity ages, RBI-aligned LTV slabs, FOIR by income
+  band, CIBIL-linked card rates). Not sourced from any lender's live or internal
+  systems.
+disclaimer: >-
+  Indicative, public-sourced approximation for demonstration only. Not any
+  lender's live, internal, or guaranteed policy; do not rely on it for an actual
+  lending decision.
+
+products:
+  - NEW_HOME_LOAN
+  - BALANCE_TRANSFER
+  - TOP_UP
+
+age:
+  salaried: { min_entry: 21, max_at_maturity: 60 }
+  self_employed: { min_entry: 21, max_at_maturity: 70 }
+
+tenure: { max_years: 30 }
+
+# FOIR caps grow with income slab; first band whose ceiling >= assessed income wins.
+foir:
+  salaried:
+    - { up_to_nmi: 50000, cap_pct: 50 }
+    - { up_to_nmi: 100000, cap_pct: 55 }
+    - { up_to_nmi: null, cap_pct: 60 }
+  self_employed:
+    - { up_to_nmi: 50000, cap_pct: 50 }
+    - { up_to_nmi: 100000, cap_pct: 55 }
+    - { up_to_nmi: null, cap_pct: 60 }
+
+# Loan as a multiple of net monthly income.
+nmi_multiplier: { min: 50, max: 60 }
+
+# RBI-aligned LTV slabs (conservative top band).
+ltv_bands:
+  - { up_to_amount: 3000000, max_ltv_pct: 90 }
+  - { up_to_amount: 7500000, max_ltv_pct: 80 }
+  - { up_to_amount: null, max_ltv_pct: 75 }
+
+# Minimum net monthly income.
+min_income:
+  salaried: { metro: 25000, non_metro: 18000 }
+  self_employed: { metro: 30000, non_metro: 22000 }
+
+# CIBIL bands cover 300..900 with no gaps; 700 is the effective floor.
+cibil_tiers:
+  - { min_score: 800, max_score: 900, decision: APPROVE, rate_pct: 8.10 }
+  - { min_score: 750, max_score: 799, decision: APPROVE, rate_pct: 8.40 }
+  - { min_score: 700, max_score: 749, decision: APPROVE, rate_pct: 8.90 }
+  - { min_score: 300, max_score: 699, decision: REJECT, rate_pct: null }
+  - { min_score: -1, max_score: -1, decision: REFER, rate_pct: 9.75 }
+
+self_employed:
+  min_business_vintage_years: 3
+  itr_years_required: 3
+
+# Wide property acceptance; tighter LTV on under-construction / plot+construction.
+property_rules:
+  - { type: UNDER_CONSTRUCTION, allowed: true, ltv_override_pct: 80 }
+  - { type: PLOT_PLUS_CONSTRUCTION, allowed: true, ltv_override_pct: 75 }
+
+variable_pay_haircut_pct: 50
+
+employer_category_perks:
+  - { category: SUPER_CAT, foir_bonus_pct: 5, rate_discount_bps: 10 }
+  - { category: CAT_A, foir_bonus_pct: 2, rate_discount_bps: 5 }
+
+co_applicant: { allowed: true, combine_income: true, max_count: 2 }
+
+product_overrides:
+  BALANCE_TRANSFER: { max_ltv_pct: 80, min_seasoning_months: 12 }
+  TOP_UP: { combined_max_ltv_pct: 75 }
+
+limits: { min_loan: 500000, max_loan: 100000000 }
