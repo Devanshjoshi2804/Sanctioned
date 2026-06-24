@@ -17,25 +17,14 @@ Given a borrower, it computes **which lenders will fund them, the maximum sancti
 rate, and the binding constraint** — deterministically, with no ML — and returns a **line-by-line
 reason trace for every verdict.**
 
-[Quickstart](#quickstart) · [Features](#features) · [How it works](#how-it-works) · [Architecture](#architecture) · [AI copilot](#ai-copilot) · [Testing](#quality--testing)
+[Quickstart](#quickstart) · [Features](#features) · [Walkthrough](#walkthrough) · [How it works](#how-it-works) · [Architecture](#architecture) · [Testing](#quality--testing)
 
 </div>
 
 <p align="center">
-  <img src="docs/assets/hero.png" width="860" alt="sanctioned match grid: ranked lenders with verdict, max sanction, rate, and an expanded line-by-line reason trace" />
+  <img src="docs/assets/hero.png" width="860" alt="sanctioned match grid: ranked lenders with verdict, max sanction, rate, EMI, and an expanded line-by-line reason trace" />
 </p>
-
-<details>
-<summary>See the AI copilot and the regression-safety report</summary>
-
-<p align="center">
-  <img src="docs/assets/demo-copilot.png" width="820" alt="Ops copilot answering a question, grounded only in the policies, with source citations" />
-</p>
-<p align="center">
-  <img src="docs/assets/demo-policydiff.png" width="820" alt="Policy-diff impact report: replay 360 personas through a rate-card change and see who flips" />
-</p>
-
-</details>
+<p align="center"><sub><i>The match grid — ranked lenders with verdict, max sanction, rate, and the expanded reason trace for one lender.</i></sub></p>
 
 > **Why this exists.** Anyone can wire up a loan calculator. The hard, valuable problem in a
 > home-loan marketplace is **lender-policy intelligence**: matching a borrower across a large panel
@@ -46,29 +35,66 @@ reason trace for every verdict.**
 
 ## Features
 
-- **Deterministic & explainable** — pure typed rules, no ML, no probabilistic scoring. The same
-  borrower always yields the same verdict, and each lender returns a reason trace naming the rule,
-  the borrower's value, and the policy threshold.
-- **Exact money math** — `Decimal` end to end (EMI and present-value formulas), rounded to whole
-  rupees only at output. Never `float` for currency.
-- **Three products** — new home loan, balance transfer (with indicative savings), and top-up
-  (combined-LTV) — one engine, dispatched per product.
-- **Policy-as-code** — each lender is a versioned, declarative YAML validated on load; the engine is
-  generic and lenders differ only in data. Four indicative archetypes (PSU bank, private bank, HFC, NBFC).
-- **Regression safety** — a 360-persona golden dataset, ten Hypothesis property invariants, Pandera
-  feed validation, and a **policy-diff impact report** that CI posts on any policy change.
+- **Deterministic & explainable** — pure typed rules, no ML. The same borrower always yields the
+  same verdict; each lender returns a reason trace naming the rule, the borrower's value, and the threshold.
+- **Exact money math** — `Decimal` end to end (EMI / present-value), rounded to whole rupees only at output.
+- **Three products** — new home loan, balance transfer (with indicative savings), and top-up (combined-LTV).
+- **Policy-as-code** — each lender is a versioned, declarative YAML validated on load; four indicative
+  archetypes (PSU bank, private bank, HFC, NBFC).
+- **Regression safety** — a 360-persona golden dataset, ten Hypothesis property invariants, Pandera feed
+  validation, and a policy-diff impact report CI posts on any policy change.
 - **REST API + ops dashboard** — FastAPI over the engine; a Next.js dashboard with the match grid,
   reason-trace ledger, lender dossiers, and an interactive policy-diff explorer.
-- **AI copilot** — retrieval-grounded Q&A over the policies and runbook, answering **only from
-  sources, with citations** — it cannot invent a rate or a rule.
-- **Consent-based ingestion** — pull income and obligations from a bank statement over the
-  Account Aggregator framework (Setu), then autofill the borrower.
+- **AI copilot** — retrieval-grounded Q&A over the policies and runbook, answering **only from sources,
+  with citations** — it cannot invent a rate or a rule.
+- **Consent-based ingestion** — pull income and obligations from a bank statement over the Account
+  Aggregator framework (Setu), then autofill the borrower.
 
 > [!IMPORTANT]
 > **Data accuracy & honesty.** Every lender number is an **indicative, public-sourced
 > approximation** — never any lender's live or internal policy. Each policy file carries a `source`
 > and a `disclaimer`, and every figure's origin is recorded in
 > [`docs/data-sources.md`](docs/data-sources.md). No accuracy metric is fabricated.
+
+## Walkthrough
+
+### Overview — every capability at a glance
+
+The landing page frames what the system does and puts the **AI copilot** front and centre:
+retrieval-grounded, cited answers — never from model memory.
+
+<p align="center">
+  <img src="docs/assets/overview.png" width="820" alt="Overview page: hero, panel stats (4 lenders, 3 products, 360 golden personas, 10 invariants), an AI-copilot highlight band with an example Q&A, and a capabilities grid" />
+</p>
+
+### Regression-safe rate cards — the policy-diff impact report
+
+Shift a lender's terms and replay **all 360 golden personas** through both versions. The report shows
+who flips, how sanctions move (average / median Δ and the largest movers), and which constraint starts
+binding — so a rate-card change ships without surprises.
+
+<p align="center">
+  <img src="docs/assets/demo-policydiff.png" width="820" alt="Policy-diff: shifting one lender's LTV replays 360 personas and reports sanction deltas and binding changes per lender" />
+</p>
+
+### AI copilot — grounded, with citations
+
+Ask in plain English. The copilot retrieves from the lender policies and the ops runbook and answers
+**only from what it retrieved, with the sources cited** — so it can't hallucinate a rate or a rule.
+Offline retrieval by default; Google Gemini embeddings + synthesis when a key is configured.
+
+<p align="center">
+  <img src="docs/assets/demo-copilot.png" width="820" alt="Ops copilot answering 'which lenders accept self-employed with two years of ITR?' with a grounded answer and source citations" />
+</p>
+
+### Policy-as-code — the lender dossier
+
+Each lender is declarative, versioned YAML validated on load. The dossier renders the policy with its
+**provenance**, LTV bands, and CIBIL tiers — every figure traceable to its source.
+
+<p align="center">
+  <img src="docs/assets/lender.png" width="820" alt="Lender dossier: provenance, key terms, LTV bands, and CIBIL tiers with decisions and rates" />
+</p>
 
 ## How it works
 
@@ -123,13 +149,6 @@ uv run python scripts/policy_diff_report.py --base HEAD --head .   # policy-diff
 
 Everything runs without any API keys — the copilot falls back to offline retrieval and AA ingestion
 to a labelled mock. See [`.env.example`](.env.example) for the optional Gemini / Setu configuration.
-
-## AI copilot
-
-The copilot retrieves from the lender policies and the ops runbook and answers **only from what it
-retrieved, with citations** — it never draws on the model's own knowledge, so it cannot hallucinate
-a rate or a rule. It is provider-agnostic: a dependency-free offline retriever by default, and
-Google Gemini embeddings + synthesis when `GEMINI_API_KEY` is set.
 
 ## Quality & testing
 
