@@ -8,12 +8,14 @@ credentials it would need, but performs no network call here.
 
 from __future__ import annotations
 
-import os
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from sanctioned_ingest.statement import BankStatement, BankTransaction, TxnCategory
+
+if TYPE_CHECKING:
+    from sanctioned_ingest.setu import SetuAaClient, SetuConfig
 
 
 class StatementSource(Protocol):
@@ -80,25 +82,31 @@ class MockStatementSource:
 
 
 class SetuAaSource:
-    """Seam for the real Setu Account-Aggregator sandbox.
+    """Statement source backed by the real Setu Account-Aggregator client.
 
-    A production implementation would, using the consent artefacts:
-      1. create a consent request and obtain consent (redirect/notification),
-      2. open a data session for the consented FIP account,
-      3. poll until the FI data is ready, then fetch and decrypt it,
-      4. map the returned transactions into :class:`BankStatement`.
-
-    It needs ``SETU_CLIENT_ID`` / ``SETU_CLIENT_SECRET`` (sandbox). This stub is
-    intentionally inert so no real data flow can happen by accident.
+    Fetching requires an **already-approved** consent id (the customer approves the
+    consent in their AA app via the web-view URL from
+    :meth:`~sanctioned_ingest.setu.SetuAaClient.start_consent`). Credentials come
+    from ``SETU_*`` env vars; constructing without them raises, so no real data
+    flow can happen by accident.
     """
 
-    def __init__(self) -> None:
-        self.client_id = os.environ.get("SETU_CLIENT_ID")
-        self.client_secret = os.environ.get("SETU_CLIENT_SECRET")
+    def __init__(
+        self,
+        consent_id: str,
+        *,
+        config: SetuConfig | None = None,
+        client: SetuAaClient | None = None,
+        lookback_months: int = 6,
+    ) -> None:
+        from sanctioned_ingest.setu import SetuAaClient, SetuConfig
+
+        self._consent_id = consent_id
+        self._client = client or SetuAaClient(config or SetuConfig.from_env())
+        self._to_date = date.today()
+        self._from_date = self._to_date - timedelta(days=lookback_months * 30)
 
     def fetch(self) -> BankStatement:
-        raise NotImplementedError(
-            "Setu AA sandbox integration is not wired up. Set SETU_CLIENT_ID / "
-            "SETU_CLIENT_SECRET and implement the consent + data-session flow, or "
-            "use MockStatementSource for the demo."
+        return self._client.fetch_statement(
+            self._consent_id, from_date=self._from_date, to_date=self._to_date
         )

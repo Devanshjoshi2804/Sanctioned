@@ -1115,11 +1115,15 @@ name = "sanctioned-ingest"
 version = "0.1.0"
 source = { editable = "packages/ingest" }
 dependencies = [
+    { name = "httpx" },
     { name = "sanctioned" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "sanctioned", editable = "packages/engine" }]
+requires-dist = [
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "sanctioned", editable = "packages/engine" },
+]
 
 [[package]]
 name = "sanctioned-workspace"
