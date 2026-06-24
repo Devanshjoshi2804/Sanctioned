@@ -36,3 +36,12 @@ export function postPolicyDiff(headPolicies: unknown[]): Promise<DiffReport> {
     body: JSON.stringify({ head_policies: headPolicies }),
   });
 }
+
+export interface IngestResult {
+  autofill: { net_monthly_income: string; existing_monthly_obligations: string };
+  derived: { salary_regularity: string; months_observed: number; disclaimer: string };
+}
+
+export function postIngestSandbox(): Promise<IngestResult> {
+  return request<IngestResult>("/ingest/sandbox", { method: "POST", body: "{}" });
+}

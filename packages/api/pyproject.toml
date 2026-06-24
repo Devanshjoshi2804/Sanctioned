@@ -10,6 +10,7 @@ description = "FastAPI service exposing the sanctioned matching engine."
 requires-python = ">=3.12"
 dependencies = [
     "sanctioned",
+    "sanctioned-ingest",
     "fastapi>=0.110",
     "uvicorn[standard]>=0.29",
 ]

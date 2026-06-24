@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { postIngestSandbox } from "@/lib/api";
 
 const EMPLOYMENT = ["SALARIED", "SELF_EMPLOYED_PROFESSIONAL", "SELF_EMPLOYED_BUSINESS"];
 const EMPLOYER = ["UNCATEGORIZED", "SUPER_CAT", "CAT_A", "CAT_B", "CAT_C"];
@@ -44,8 +45,27 @@ export function BorrowerForm({
   pending: boolean;
 }) {
   const [state, setState] = useState<FormState>(DEFAULTS);
+  const [autofillNote, setAutofillNote] = useState<string | null>(null);
   const set = (key: keyof FormState) => (value: string) =>
     setState((prev) => ({ ...prev, [key]: value }));
+
+  const autofillFromStatement = async () => {
+    setAutofillNote("Fetching sandbox statement…");
+    try {
+      const result = await postIngestSandbox();
+      setState((prev) => ({
+        ...prev,
+        net_monthly_income: result.autofill.net_monthly_income,
+        existing_monthly_obligations: result.autofill.existing_monthly_obligations,
+      }));
+      setAutofillNote(
+        `Pulled from a sandbox statement over ${result.derived.months_observed} months · ` +
+          `salary ${result.derived.salary_regularity.toLowerCase()}`,
+      );
+    } catch {
+      setAutofillNote("Autofill failed — is the API running?");
+    }
+  };
 
   const isSelfEmployed = state.employment_type !== "SALARIED";
   const isBT = state.product_type === "BALANCE_TRANSFER";
@@ -87,6 +107,20 @@ export function BorrowerForm({
         )}
         <Field label="Other EMIs (₹/mo)" name="existing_monthly_obligations" value={state.existing_monthly_obligations} onChange={set("existing_monthly_obligations")} />
       </Group>
+
+      <div className="rounded-sm border border-dashed border-line bg-paper/40 p-2.5">
+        <button
+          type="button"
+          onClick={autofillFromStatement}
+          data-testid="autofill-sandbox"
+          className="font-display text-[12px] font-semibold text-accent hover:underline"
+        >
+          ↓ Autofill income from a sandbox statement
+        </button>
+        <p className="mt-1 text-[10px] leading-tight text-slate">
+          {autofillNote ?? "Mock Account-Aggregator pull — sandbox only, no real data."}
+        </p>
+      </div>
 
       <Group title="Property">
         <Field label="Value (₹)" name="property_value" value={state.property_value} onChange={set("property_value")} />

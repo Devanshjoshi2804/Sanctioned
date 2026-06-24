@@ -11,7 +11,7 @@ name = "sanctioned-workspace"
 version = "0.0.0"
 description = "Lender-policy eligibility & matching engine — workspace root."
 requires-python = ">=3.12"
-dependencies = ["sanctioned", "sanctioned-api", "sanctioned-copilot"]
+dependencies = ["sanctioned", "sanctioned-api", "sanctioned-copilot", "sanctioned-ingest"]
 
 [tool.uv.workspace]
 members = ["packages/*"]
@@ -20,6 +20,7 @@ members = ["packages/*"]
 sanctioned = { workspace = true }
 sanctioned-api = { workspace = true }
 sanctioned-copilot = { workspace = true }
+sanctioned-ingest = { workspace = true }
 
 [tool.uv]
 package = false
@@ -60,7 +61,7 @@ python_version = "3.12"
 strict = true
 plugins = ["pydantic.mypy"]
 files = ["packages", "scripts"]
-mypy_path = ["packages/api", "packages/copilot"]
+mypy_path = ["packages/api", "packages/copilot", "packages/ingest"]
 
 [tool.pydantic-mypy]
 init_forbid_extra = true
@@ -80,7 +81,12 @@ ignore_missing_imports = true
 # --- Tests --------------------------------------------------------------------
 
 [tool.pytest.ini_options]
-testpaths = ["packages/engine/tests", "packages/api/tests", "packages/copilot/tests"]
+testpaths = [
+    "packages/engine/tests",
+    "packages/api/tests",
+    "packages/copilot/tests",
+    "packages/ingest/tests",
+]
 pythonpath = ["packages/engine"]
 addopts = "-ra"
 filterwarnings = [

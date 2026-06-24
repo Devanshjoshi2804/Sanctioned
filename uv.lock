@@ -18,6 +18,7 @@ members = [
     "sanctioned",
     "sanctioned-api",
     "sanctioned-copilot",
+    "sanctioned-ingest",
     "sanctioned-workspace",
 ]
 
@@ -1080,6 +1081,7 @@ source = { editable = "packages/api" }
 dependencies = [
     { name = "fastapi" },
     { name = "sanctioned" },
+    { name = "sanctioned-ingest" },
     { name = "uvicorn", extra = ["standard"] },
 ]
 
@@ -1087,6 +1089,7 @@ dependencies = [
 requires-dist = [
     { name = "fastapi", specifier = ">=0.110" },
     { name = "sanctioned", editable = "packages/engine" },
+    { name = "sanctioned-ingest", editable = "packages/ingest" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.29" },
 ]
 
@@ -1106,6 +1109,17 @@ requires-dist = [
 ]
 
 [[package]]
+name = "sanctioned-ingest"
+version = "0.1.0"
+source = { editable = "packages/ingest" }
+dependencies = [
+    { name = "sanctioned" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "sanctioned", editable = "packages/engine" }]
+
+[[package]]
 name = "sanctioned-workspace"
 version = "0.0.0"
 source = { virtual = "." }
@@ -1113,6 +1127,7 @@ dependencies = [
     { name = "sanctioned" },
     { name = "sanctioned-api" },
     { name = "sanctioned-copilot" },
+    { name = "sanctioned-ingest" },
 ]
 
 [package.dev-dependencies]
@@ -1131,6 +1146,7 @@ requires-dist = [
     { name = "sanctioned", editable = "packages/engine" },
     { name = "sanctioned-api", editable = "packages/api" },
     { name = "sanctioned-copilot", editable = "packages/copilot" },
+    { name = "sanctioned-ingest", editable = "packages/ingest" },
 ]
 
 [package.metadata.requires-dev]

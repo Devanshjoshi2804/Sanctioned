@@ -13,11 +13,15 @@ The engine is imported as a library; this module contains no business rules.
 
 from __future__ import annotations
 
+from decimal import Decimal
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from sanctioned_ingest.autofill import profile_autofill
+from sanctioned_ingest.derive import derive_financials
+from sanctioned_ingest.source import MockStatementSource
 
 from sanctioned.engine import match
 from sanctioned.policy_diff import diff_registries
@@ -116,6 +120,49 @@ class ValidateRequest(BaseModel):
 
     personas: list[dict[str, Any]] | None = None
     offers: list[dict[str, Any]] | None = None
+
+
+class IngestRequest(BaseModel):
+    """Sandbox statement parameters; all optional with demo defaults."""
+
+    monthly_salary: str | None = None
+    monthly_emi: str | None = None
+    months: int = Field(default=4, ge=1, le=24)
+    skip_salary_month: int | None = None
+
+
+@app.post("/ingest/sandbox")
+def post_ingest_sandbox(body: IngestRequest) -> dict[str, Any]:
+    """Derive borrower financials from a sandbox/mock bank statement (no real data)."""
+    source = MockStatementSource(
+        monthly_salary=Decimal(body.monthly_salary) if body.monthly_salary else Decimal("90000"),
+        monthly_emi=Decimal(body.monthly_emi) if body.monthly_emi else Decimal("12000"),
+        months=body.months,
+        skip_salary_month=body.skip_salary_month,
+    )
+    statement = source.fetch()
+    derived = derive_financials(statement)
+    return {
+        "derived": {
+            "net_monthly_income": str(derived.net_monthly_income),
+            "existing_monthly_obligations": str(derived.existing_monthly_obligations),
+            "salary_regularity": derived.salary_regularity,
+            "regularity_score": str(derived.regularity_score),
+            "months_observed": derived.months_observed,
+            "source": derived.source,
+            "disclaimer": derived.disclaimer,
+        },
+        "autofill": profile_autofill(derived),
+        "statement_preview": [
+            {
+                "date": txn.txn_date.isoformat(),
+                "amount": str(txn.amount),
+                "description": txn.description,
+                "category": txn.category.value,
+            }
+            for txn in statement.transactions[:6]
+        ],
+    }
 
 
 @app.post("/validate")

@@ -113,6 +113,19 @@ class TestValidate:
         assert body["ok"] is False
 
 
+class TestIngestSandbox:
+    def test_derives_autofill_from_mock_statement(self) -> None:
+        body = client.post("/ingest/sandbox", json={}).json()
+        assert body["autofill"]["net_monthly_income"] == "90000"
+        assert body["autofill"]["existing_monthly_obligations"] == "12000"
+        assert body["derived"]["salary_regularity"] == "REGULAR"
+        assert "sandbox" in body["derived"]["disclaimer"].lower()
+
+    def test_irregular_salary_is_flagged(self) -> None:
+        body = client.post("/ingest/sandbox", json={"months": 4, "skip_salary_month": 1}).json()
+        assert body["derived"]["salary_regularity"] == "IRREGULAR"
+
+
 @pytest.mark.parametrize("path", ["/health", "/openapi.json"])
 def test_service_endpoints(path: str) -> None:
     assert client.get(path).status_code == 200

@@ -1,0 +1,20 @@
+# Account-Aggregator ingestion (Phase 5, sandbox-only).
+#
+# Derives borrower financials from a bank statement: net monthly income from
+# salary credits, existing obligations from EMI debits, and salary regularity.
+# The statement source is pluggable — a deterministic mock today, a Setu AA
+# sandbox client behind the same seam. No real or production data flows here.
+
+[project]
+name = "sanctioned-ingest"
+version = "0.1.0"
+description = "Sandbox AA ingestion: bank statement -> borrower-profile autofill."
+requires-python = ">=3.12"
+dependencies = ["sanctioned"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["sanctioned_ingest"]
