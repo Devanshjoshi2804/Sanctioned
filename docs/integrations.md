@@ -31,12 +31,20 @@ flow (`SetuAaClient`): it makes real HTTP calls when credentials are set. The mo
    data, and maps it (`map_fi_data_to_statement`) into a `BankStatement`.
 4. `derive_financials(statement)` → net income, obligations, salary regularity.
 
-**To go live:** put your Setu sandbox credentials in `.env` (see `.env.example`):
-`SETU_CLIENT_ID`, `SETU_CLIENT_SECRET`, `SETU_PRODUCT_INSTANCE_ID` (and optionally
-`SETU_AA_BASE_URL`). Then `SetuConfig.from_env()` / `SetuAaSource(consent_id)` use
-them. The consent → session → fetch logic is covered by tests using an HTTP test
-double; confirm the exact request field names against your Setu Postman collection
-before the first live call.
+**Auth is two-step** (verified live against the Setu sandbox):
+
+1. Exchange the client id/secret for a Bearer token: `POST {auth}/users/login` with
+   header `client: bridge` and body `{clientID, secret, grant_type: client_credentials}`.
+2. Call the `/v2` FIU endpoints with `Authorization: Bearer <token>` and
+   `x-product-instance-id`. Consent creation needs `consentMode: STORE` with a
+   non-zero `dataLife` (the product default is VIEW, which requires dataLife 0).
+
+**To go live:** put your sandbox credentials in `.env` (see `.env.example`):
+`SETU_CLIENT_ID`, `SETU_CLIENT_SECRET`, `SETU_PRODUCT_INSTANCE_ID`. Then
+`SetuConfig.from_env()` / `SetuAaClient` work directly — `start_consent` returns a
+real approval URL (confirmed end-to-end). KYC is required only for **production
+go-live**, not sandbox. After the customer approves the consent at the web-view
+URL, `fetch_statement` pulls the data.
 
 > Note: **Setu** (setu.co, Account Aggregator) is *not* the same as **API Setu**
 > (apisetu.gov.in). AA is the route for bank statements. API Setu is a government

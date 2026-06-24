@@ -5,22 +5,20 @@ data session → fetch → map to a :class:`BankStatement`. It performs real HTT
 calls when credentials are configured; there is no synthetic data here. The mock
 generator in :mod:`sanctioned_ingest.source` remains the offline fallback.
 
-Configuration comes from the environment (sandbox credentials from the Setu
-Bridge console):
+Auth is two-step (verified live against the Setu sandbox): exchange the client
+id/secret for a Bearer token at the central auth host (``/users/login`` with the
+``client: bridge`` header), then call the ``/v2`` FIU endpoints with that token plus
+``x-product-instance-id``.
 
-* ``SETU_AA_BASE_URL``        — FIU base, defaults to the sandbox host
-* ``SETU_CLIENT_ID``          — ``x-client-id``
-* ``SETU_CLIENT_SECRET``      — ``x-client-secret``
-* ``SETU_PRODUCT_INSTANCE_ID``— ``x-product-instance-id``
+Configuration comes from the environment (sandbox credentials from the Setu Bridge
+console): ``SETU_CLIENT_ID``, ``SETU_CLIENT_SECRET``, ``SETU_PRODUCT_INSTANCE_ID``
+(and optional ``SETU_AA_BASE_URL`` / ``SETU_AUTH_BASE_URL``).
 
 The AA consent step is interactive (the customer approves in their AA app via the
 returned web-view URL), so the flow is split: :meth:`SetuAaClient.start_consent`
 returns the approval URL, and once the consent is ACTIVE,
-:meth:`SetuAaClient.fetch_statement` pulls the data. Field names follow Setu's AA
-v2 contract; the FI-data parser is deliberately tolerant of nesting variants.
-
-> Confirm exact request fields against your Setu Postman collection before going
-> live; the response mapper already handles the common shape variants.
+:meth:`SetuAaClient.fetch_statement` pulls the data. The FI-data parser is
+deliberately tolerant of the nesting variants Setu returns across FIPs.
 """
 
 from __future__ import annotations
@@ -35,7 +33,9 @@ import httpx
 
 from sanctioned_ingest.statement import BankStatement, BankTransaction, TxnCategory
 
-_SANDBOX_BASE_URL = "https://fiu-sandbox.setu.co"
+# The FIU data APIs are environment-specific; auth (login) is a single central host.
+_DATA_BASE_URL = "https://fiu-sandbox.setu.co"
+_AUTH_BASE_URL = "https://orgservice-prod.setu.co/v1"
 _DEFAULT_TIMEOUT = 30.0
 
 # Narration keywords used to categorise AA transactions.
@@ -45,12 +45,13 @@ _EMI_HINTS = ("emi", "ach", "loan", "mandate", "nach")
 
 @dataclass(frozen=True)
 class SetuConfig:
-    """Setu AA FIU credentials and host."""
+    """Setu AA FIU credentials and hosts."""
 
     client_id: str
     client_secret: str
     product_instance_id: str
-    base_url: str = _SANDBOX_BASE_URL
+    data_base_url: str = _DATA_BASE_URL
+    auth_base_url: str = _AUTH_BASE_URL
 
     @classmethod
     def from_env(cls) -> SetuConfig:
@@ -60,7 +61,8 @@ class SetuConfig:
                 client_id=os.environ["SETU_CLIENT_ID"],
                 client_secret=os.environ["SETU_CLIENT_SECRET"],
                 product_instance_id=os.environ["SETU_PRODUCT_INSTANCE_ID"],
-                base_url=os.environ.get("SETU_AA_BASE_URL", _SANDBOX_BASE_URL),
+                data_base_url=os.environ.get("SETU_AA_BASE_URL", _DATA_BASE_URL),
+                auth_base_url=os.environ.get("SETU_AUTH_BASE_URL", _AUTH_BASE_URL),
             )
         except KeyError as missing:
             raise RuntimeError(f"missing Setu AA env var: {missing}") from missing
@@ -76,38 +78,60 @@ class ConsentRequest:
 
 
 class SetuAaClient:
-    """Low-level client for Setu's AA FIU endpoints."""
+    """Client for Setu's AA FIU v2 APIs.
+
+    Auth is two-step: exchange the client id/secret for a Bearer access token at the
+    central auth host (``/users/login`` with the ``client: bridge`` header), then
+    call the ``/v2`` FIU endpoints with that token plus the product-instance header.
+    """
 
     def __init__(self, config: SetuConfig, *, client: httpx.Client | None = None) -> None:
         self._config = config
-        self._client = client or httpx.Client(base_url=config.base_url, timeout=_DEFAULT_TIMEOUT)
+        self._client = client or httpx.Client(timeout=_DEFAULT_TIMEOUT)
+        self._token: str | None = None
+
+    def _access_token(self) -> str:
+        if self._token is None:
+            response = self._client.post(
+                f"{self._config.auth_base_url}/users/login",
+                headers={"client": "bridge", "Content-Type": "application/json"},
+                json={
+                    "clientID": self._config.client_id,
+                    "secret": self._config.client_secret,
+                    "grant_type": "client_credentials",
+                },
+            )
+            _raise_for_status(response)
+            self._token = str(_as_dict(response.json())["access_token"])
+        return self._token
 
     def _headers(self) -> dict[str, str]:
         return {
             "Content-Type": "application/json",
-            "x-client-id": self._config.client_id,
-            "x-client-secret": self._config.client_secret,
+            "Authorization": f"Bearer {self._access_token()}",
             "x-product-instance-id": self._config.product_instance_id,
         }
 
     def start_consent(
-        self, vua: str, *, from_date: date, to_date: date, months: int = 24
+        self,
+        vua: str,
+        *,
+        from_date: date,
+        to_date: date,
+        duration_months: int = 24,
+        consent_mode: str = "STORE",
+        data_life_months: int = 3,
     ) -> ConsentRequest:
         """Create a consent request; the customer approves it at ``approval_url``."""
-        payload = {
-            "consentDuration": {"unit": "MONTH", "value": str(months)},
+        payload: dict[str, Any] = {
+            "consentDuration": {"unit": "MONTH", "value": str(duration_months)},
             "vua": vua,
             "dataRange": {"from": _iso(from_date), "to": _iso(to_date)},
-            "consentMode": "STORE",
-            "consentTypes": ["TRANSACTIONS", "SUMMARY", "PROFILE"],
-            "fiTypes": ["DEPOSIT"],
-            "Purpose": {
-                "code": "101",
-                "text": "Loan eligibility assessment",
-                "Category": {"type": "Loan"},
-            },
+            "context": [],
+            "consentMode": consent_mode,
+            "dataLife": {"unit": "MONTH", "value": data_life_months},
         }
-        body = self._post("/consents", payload)
+        body = self._post("/v2/consents", payload)
         return ConsentRequest(
             consent_request_id=str(body.get("id", "")),
             approval_url=str(body.get("url", "")),
@@ -116,7 +140,7 @@ class SetuAaClient:
 
     def consent_status(self, consent_request_id: str) -> dict[str, Any]:
         """Return the consent object (``status`` is PENDING/ACTIVE/REJECTED)."""
-        return self._get(f"/consents/{consent_request_id}")
+        return self._get(f"/v2/consents/{consent_request_id}")
 
     def create_session(self, consent_id: str, *, from_date: date, to_date: date) -> str:
         """Open a data session for an active consent; returns the session id."""
@@ -125,12 +149,12 @@ class SetuAaClient:
             "dataRange": {"from": _iso(from_date), "to": _iso(to_date)},
             "format": "json",
         }
-        body = self._post("/sessions", payload)
+        body = self._post("/v2/sessions", payload)
         return str(body["id"])
 
     def session_data(self, session_id: str) -> dict[str, Any]:
         """Fetch the FI data for a session (``status`` COMPLETED when ready)."""
-        return self._get(f"/sessions/{session_id}")
+        return self._get(f"/v2/sessions/{session_id}")
 
     def fetch_statement(
         self, consent_id: str, *, from_date: date, to_date: date, account_ref: str = "SETU-AA"
@@ -141,26 +165,27 @@ class SetuAaClient:
         return map_fi_data_to_statement(data, account_ref=account_ref)
 
     def _post(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
-        response = self._client.post(path, json=payload, headers=self._headers())
+        response = self._client.post(
+            f"{self._config.data_base_url}{path}", json=payload, headers=self._headers()
+        )
         _raise_for_status(response)
         return _as_dict(response.json())
 
     def _get(self, path: str) -> dict[str, Any]:
-        response = self._client.get(path, headers=self._headers())
+        response = self._client.get(f"{self._config.data_base_url}{path}", headers=self._headers())
         _raise_for_status(response)
         return _as_dict(response.json())
 
 
 class SetuCredentialsError(RuntimeError):
-    """Raised when Setu rejects the credentials (commonly: KYC not yet complete)."""
+    """Raised when Setu rejects authentication (bad client id/secret or product id)."""
 
 
 def _raise_for_status(response: httpx.Response) -> None:
     if response.status_code in (401, 403):
         raise SetuCredentialsError(
-            f"Setu rejected the credentials ({response.status_code}: {response.text}). "
-            "In sandbox this usually means the FIU KYC is incomplete or the product "
-            "instance is not yet active — complete KYC in the Setu Bridge console."
+            f"Setu rejected authentication ({response.status_code}: {response.text}). "
+            "Check SETU_CLIENT_ID / SETU_CLIENT_SECRET and the product instance id."
         )
     response.raise_for_status()
 
@@ -235,7 +260,8 @@ def _categorize(txn_type: str, narration: str) -> TxnCategory:
 
 
 def _iso(value: date) -> str:
-    return value.isoformat()
+    # Setu expects full ISO-8601 timestamps for date ranges.
+    return f"{value.isoformat()}T00:00:00Z"
 
 
 def _as_dict(value: Any) -> dict[str, Any]:

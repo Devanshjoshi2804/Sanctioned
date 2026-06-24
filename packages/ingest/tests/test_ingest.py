@@ -131,59 +131,60 @@ class TestSetuMapping:
 
 class TestSetuClient:
     def test_fetch_statement_drives_the_real_session_flow(self) -> None:
-        seen_headers: dict[str, str] = {}
+        seen: dict[str, str] = {}
 
         def handler(request: httpx.Request) -> httpx.Response:
-            seen_headers.update(request.headers)
-            if request.method == "POST" and request.url.path == "/sessions":
+            if request.url.path.endswith("/users/login"):
+                return httpx.Response(200, json={"access_token": "tok-123"})
+            if request.method == "POST" and request.url.path == "/v2/sessions":
                 return httpx.Response(200, json={"id": "sess-1", "status": "PENDING"})
-            if request.method == "GET" and request.url.path == "/sessions/sess-1":
+            if request.method == "GET" and request.url.path == "/v2/sessions/sess-1":
+                seen.update(request.headers)  # capture the authed request's headers
                 return httpx.Response(200, json=_SESSION_PAYLOAD)
             return httpx.Response(404, json={"error": request.url.path})
 
         config = SetuConfig(client_id="cid", client_secret="sec", product_instance_id="pid")
-        http = httpx.Client(transport=httpx.MockTransport(handler), base_url=config.base_url)
-        client = SetuAaClient(config, client=http)
+        client = SetuAaClient(config, client=httpx.Client(transport=httpx.MockTransport(handler)))
 
         statement = client.fetch_statement(
             "consent-1", from_date=date(2026, 1, 1), to_date=date(2026, 3, 1)
         )
         assert len(statement.transactions) == 3
-        # The Setu auth headers were sent on the request.
-        assert seen_headers["x-client-id"] == "cid"
-        assert seen_headers["x-product-instance-id"] == "pid"
+        # The Bearer token (from /users/login) and product instance header were sent.
+        assert seen["authorization"] == "Bearer tok-123"
+        assert seen["x-product-instance-id"] == "pid"
 
     def test_rejected_credentials_raise_a_clear_error(self) -> None:
-        # Mirrors the real sandbox behaviour when KYC is incomplete (401).
+        # Mirrors a bad client id/secret: the token call returns 401.
         def handler(request: httpx.Request) -> httpx.Response:
             return httpx.Response(401, json={"message": "INVALID_CREDENTIALS"})
 
-        config = SetuConfig(client_id="cid", client_secret="sec", product_instance_id="pid")
-        http = httpx.Client(transport=httpx.MockTransport(handler), base_url=config.base_url)
-        client = SetuAaClient(config, client=http)
-        with pytest.raises(SetuCredentialsError, match="KYC"):
+        config = SetuConfig(client_id="bad", client_secret="bad", product_instance_id="pid")
+        client = SetuAaClient(config, client=httpx.Client(transport=httpx.MockTransport(handler)))
+        with pytest.raises(SetuCredentialsError, match="authentication"):
             client.start_consent("v@aa", from_date=date(2026, 1, 1), to_date=date(2026, 3, 1))
 
     def test_start_consent_returns_approval_url(self) -> None:
         def handler(request: httpx.Request) -> httpx.Response:
+            if request.url.path.endswith("/users/login"):
+                return httpx.Response(200, json={"access_token": "tok-123"})
             return httpx.Response(
-                200,
+                201,
                 json={
                     "id": "consent-req-1",
-                    "url": "https://fiu-sandbox.setu.co/consents/webview/consent-req-1",
+                    "url": "https://fiu-uat.setu.co/v2/consents/ui/consent-req-1",
                     "status": "PENDING",
                 },
             )
 
         config = SetuConfig(client_id="cid", client_secret="sec", product_instance_id="pid")
-        http = httpx.Client(transport=httpx.MockTransport(handler), base_url=config.base_url)
-        client = SetuAaClient(config, client=http)
+        client = SetuAaClient(config, client=httpx.Client(transport=httpx.MockTransport(handler)))
 
         consent = client.start_consent(
             "9999999999@onemoney", from_date=date(2026, 1, 1), to_date=date(2026, 3, 1)
         )
         assert consent.consent_request_id == "consent-req-1"
-        assert "webview" in consent.approval_url
+        assert "consents/ui" in consent.approval_url
 
 
 class TestSetuConfig:
