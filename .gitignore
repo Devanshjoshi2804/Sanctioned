@@ -32,3 +32,4 @@ next-env.d.ts
 # Browser-automation artifacts
 .playwright-mcp/
 verify-*.png
+setu-consent-*.png
