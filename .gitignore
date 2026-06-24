@@ -1,6 +1,7 @@
 # Python
 __pycache__/
 *.py[cod]
+*.so
 .venv/
 .mypy_cache/
 .ruff_cache/
@@ -9,6 +10,12 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+
+# Coverage
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
 
 # Environment
 .env
@@ -23,6 +30,12 @@ playwright-report/
 test-results/
 next-env.d.ts
 *.tsbuildinfo
+.vercel/
+.turbo/
+
+# Logs & temp
+*.log
+*.tmp
 
 # OS / editor
 .DS_Store
