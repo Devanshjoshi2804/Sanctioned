@@ -56,12 +56,17 @@ known-first-party = ["sanctioned"]
 python_version = "3.12"
 strict = true
 plugins = ["pydantic.mypy"]
-files = ["packages"]
+files = ["packages", "scripts"]
 
 [tool.pydantic-mypy]
 init_forbid_extra = true
 init_typed = true
 warn_required_dynamic_aliases = true
+
+# pandas ships no type stubs; we use it only as a thin Pandera backend.
+[[tool.mypy.overrides]]
+module = ["pandas", "pandas.*"]
+ignore_missing_imports = true
 
 # --- Tests --------------------------------------------------------------------
 

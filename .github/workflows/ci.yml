@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Lint, type-check & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Sync workspace
+        run: uv sync
+
+      - name: Ruff (lint)
+        run: uv run ruff check
+
+      - name: Black (format check)
+        run: uv run black --check .
+
+      - name: Mypy (strict types)
+        run: uv run mypy
+
+      - name: Pytest (unit + integration + property + golden)
+        run: uv run pytest
+
+  policy-diff:
+    name: Policy-diff impact report
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Sync workspace
+        run: uv sync
+
+      - name: Detect policy changes
+        id: changes
+        run: |
+          git fetch origin "${{ github.base_ref }}" --depth=1
+          if git diff --name-only "origin/${{ github.base_ref }}...HEAD" \
+              | grep -q '^packages/engine/policies/'; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate impact report
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          uv run python scripts/policy_diff_report.py \
+            --base "origin/${{ github.base_ref }}" --head . --out policy-diff.md
+
+      - name: Post impact report as PR comment
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr comment "${{ github.event.pull_request.number }}" --body-file policy-diff.md
