@@ -142,13 +142,27 @@ class SetuAaClient:
 
     def _post(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
         response = self._client.post(path, json=payload, headers=self._headers())
-        response.raise_for_status()
+        _raise_for_status(response)
         return _as_dict(response.json())
 
     def _get(self, path: str) -> dict[str, Any]:
         response = self._client.get(path, headers=self._headers())
-        response.raise_for_status()
+        _raise_for_status(response)
         return _as_dict(response.json())
+
+
+class SetuCredentialsError(RuntimeError):
+    """Raised when Setu rejects the credentials (commonly: KYC not yet complete)."""
+
+
+def _raise_for_status(response: httpx.Response) -> None:
+    if response.status_code in (401, 403):
+        raise SetuCredentialsError(
+            f"Setu rejected the credentials ({response.status_code}: {response.text}). "
+            "In sandbox this usually means the FIU KYC is incomplete or the product "
+            "instance is not yet active — complete KYC in the Setu Bridge console."
+        )
+    response.raise_for_status()
 
 
 # --- FI data mapping ----------------------------------------------------------

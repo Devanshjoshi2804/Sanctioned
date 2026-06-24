@@ -10,7 +10,12 @@ import httpx
 import pytest
 from sanctioned_ingest.autofill import profile_autofill
 from sanctioned_ingest.derive import derive_financials
-from sanctioned_ingest.setu import SetuAaClient, SetuConfig, map_fi_data_to_statement
+from sanctioned_ingest.setu import (
+    SetuAaClient,
+    SetuConfig,
+    SetuCredentialsError,
+    map_fi_data_to_statement,
+)
 from sanctioned_ingest.source import MockStatementSource, SetuAaSource
 from sanctioned_ingest.statement import TxnCategory
 
@@ -147,6 +152,17 @@ class TestSetuClient:
         # The Setu auth headers were sent on the request.
         assert seen_headers["x-client-id"] == "cid"
         assert seen_headers["x-product-instance-id"] == "pid"
+
+    def test_rejected_credentials_raise_a_clear_error(self) -> None:
+        # Mirrors the real sandbox behaviour when KYC is incomplete (401).
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(401, json={"message": "INVALID_CREDENTIALS"})
+
+        config = SetuConfig(client_id="cid", client_secret="sec", product_instance_id="pid")
+        http = httpx.Client(transport=httpx.MockTransport(handler), base_url=config.base_url)
+        client = SetuAaClient(config, client=http)
+        with pytest.raises(SetuCredentialsError, match="KYC"):
+            client.start_consent("v@aa", from_date=date(2026, 1, 1), to_date=date(2026, 3, 1))
 
     def test_start_consent_returns_approval_url(self) -> None:
         def handler(request: httpx.Request) -> httpx.Response:

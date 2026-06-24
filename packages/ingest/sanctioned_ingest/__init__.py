@@ -11,6 +11,7 @@ from sanctioned_ingest.setu import (
     ConsentRequest,
     SetuAaClient,
     SetuConfig,
+    SetuCredentialsError,
     map_fi_data_to_statement,
 )
 from sanctioned_ingest.source import MockStatementSource, SetuAaSource, StatementSource
@@ -25,6 +26,7 @@ __all__ = [
     "SetuAaClient",
     "SetuAaSource",
     "SetuConfig",
+    "SetuCredentialsError",
     "StatementSource",
     "TxnCategory",
     "derive_financials",
